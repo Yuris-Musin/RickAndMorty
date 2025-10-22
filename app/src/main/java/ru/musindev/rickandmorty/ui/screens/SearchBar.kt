@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
@@ -72,42 +71,3 @@ fun SearchBar(
         )
     }
 }
-
-
-//@Composable
-//fun SearchBar(
-//    value: String,
-//    onValueChange: (String) -> Unit,
-//    modifier: Modifier = Modifier
-//) {
-//    Box(
-//        modifier = Modifier
-//            .fillMaxWidth()
-//            .background(BackgroundColor),
-//        contentAlignment = Alignment.Center
-//    ) {
-//        TextField(
-//            value = value,
-//            onValueChange = onValueChange,
-//            placeholder = { Text("Search characters") },
-//            singleLine = true,
-//            leadingIcon = {
-//                Icon(Icons.Default.Search, contentDescription = "Search")
-//            },
-//            colors = TextFieldDefaults.colors(
-//                focusedContainerColor = BackgroundColor,
-//                unfocusedContainerColor = BackgroundColor,
-//                focusedIndicatorColor = Color.Transparent,
-//                unfocusedIndicatorColor = Color.Transparent,
-//                focusedTextColor = Color.White,
-//                unfocusedTextColor = Color.White,
-//                disabledTextColor = Color.Gray,
-//                cursorColor = Color.White
-//            ),
-//            shape = RoundedCornerShape(16.dp),
-//            modifier = modifier
-//                .fillMaxWidth()
-//                .padding(16.dp)
-//        )
-//    }
-//}

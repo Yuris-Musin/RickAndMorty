@@ -45,6 +45,7 @@ fun CharactersScreen(
             value = searchQuery,
             onValueChange = { searchQuery = it }
         )
+        @Suppress("DEPRECATION")
         SwipeRefresh(
             state = rememberSwipeRefreshState(isRefreshing),
             onRefresh = { viewModel.refreshCharacters() },

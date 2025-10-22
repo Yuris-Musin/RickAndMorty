@@ -10,6 +10,7 @@ import kotlinx.coroutines.launch
 import ru.musindev.rickandmorty.domain.usecase.GetCharactersUseCase
 import javax.inject.Inject
 import ru.musindev.rickandmorty.data.models.Character
+import ru.musindev.rickandmorty.domain.models.CharacterFilters
 
 @HiltViewModel
 class CharactersViewModel @Inject constructor(
@@ -28,6 +29,12 @@ class CharactersViewModel @Inject constructor(
     private val _error = mutableStateOf<String?>(null)
     val error = _error
 
+    private val _filters = mutableStateOf(CharacterFilters())
+    val filters = _filters
+
+    private val _isOfflineMode = mutableStateOf(false)
+    val isOfflineMode = _isOfflineMode
+
     private var currentPage = 1
     private var isLastPage = false
 
@@ -43,19 +50,21 @@ class CharactersViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
-                // forceRefresh = false, но всегда пытаемся загрузить с сервера
-                val response = getCharactersUseCase(currentPage, forceRefresh = false)
+                val response = getCharactersUseCase(currentPage, forceRefresh = false, filters = _filters.value)
                 _characters.addAll(response.results)
                 currentPage++
 
                 if (response.info.next == null) {
                     isLastPage = true
                 }
+
+                // Проверяем offline mode (если pages = 1 и next = null, это может быть кеш)
+                _isOfflineMode.value = response.info.pages == 1 && response.info.next == null && _filters.value.isActive()
+
             } catch (e: Exception) {
                 Log.e("CharactersViewModel", "Error loading characters", e)
                 _error.value = when {
-                    e.message?.contains("No internet") == true -> "Нет интернета. Показаны сохранённые данные"
-                    e.message?.contains("no cached data") == true -> "Нет интернета и нет сохранённых данных"
+                    e.message?.contains("No cached data") == true -> "Нет сохранённых данных"
                     else -> "Ошибка загрузки: ${e.message}"
                 }
             } finally {
@@ -83,14 +92,16 @@ class CharactersViewModel @Inject constructor(
                 isLastPage = false
                 _characters.clear()
 
-                // forceRefresh = true для очистки кеша
-                val response = getCharactersUseCase(currentPage, forceRefresh = true)
+                val response = getCharactersUseCase(currentPage, forceRefresh = true, filters = _filters.value)
                 _characters.addAll(response.results)
                 currentPage++
 
                 if (response.info.next == null) {
                     isLastPage = true
                 }
+
+                _isOfflineMode.value = false
+
             } catch (e: Exception) {
                 Log.e("CharactersViewModel", "Error refreshing characters", e)
                 _error.value = when {
@@ -101,5 +112,17 @@ class CharactersViewModel @Inject constructor(
                 _isRefreshing.value = false
             }
         }
+    }
+
+    fun applyFilters(newFilters: CharacterFilters) {
+        _filters.value = newFilters
+        currentPage = 1
+        isLastPage = false
+        _characters.clear()
+        loadCharacters()
+    }
+
+    fun clearFilters() {
+        applyFilters(CharacterFilters())
     }
 }

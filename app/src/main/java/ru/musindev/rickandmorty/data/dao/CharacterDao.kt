@@ -27,7 +27,23 @@ interface CharacterDao {
     @Query("SELECT COUNT(*) FROM characters")
     suspend fun getCharactersCount(): Int
 
-    // Для поиска персонажей
+    // Поиск по имени
     @Query("SELECT * FROM characters WHERE name LIKE '%' || :query || '%' ORDER BY id ASC")
     suspend fun searchCharacters(query: String): List<CharacterEntity>
+
+    // Фильтрация с поддержкой множественных условий
+    @Query("""
+        SELECT * FROM characters 
+        WHERE (:status IS NULL OR LOWER(status) = LOWER(:status))
+        AND (:species IS NULL OR species = :species)
+        AND (:type IS NULL OR type = :type)
+        AND (:gender IS NULL OR LOWER(gender) = LOWER(:gender))
+        ORDER BY id ASC
+    """)
+    suspend fun getFilteredCharacters(
+        status: String?,
+        species: String?,
+        type: String?,
+        gender: String?
+    ): List<CharacterEntity>
 }

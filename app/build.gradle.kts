@@ -56,23 +56,15 @@ dependencies {
 
     //Retrofit
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
-    implementation("com.squareup.retrofit2:converter-moshi:2.9.0")
-    implementation("com.squareup.moshi:moshi-kotlin:1.15.0")
-    implementation("com.squareup.moshi:moshi-adapters:1.15.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
-
-    // Serialization
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
 
     // Coil for image loading
     implementation("io.coil-kt:coil-compose:2.5.0")
 
     // Accompanist для Pull-to-Refresh
     implementation("com.google.accompanist:accompanist-swiperefresh:0.32.0")
-
-    implementation("androidx.paging:paging-runtime:3.2.1")
 
     implementation(libs.androidx.navigation)
 

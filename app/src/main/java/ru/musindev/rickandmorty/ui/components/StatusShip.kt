@@ -1,4 +1,4 @@
-package ru.musindev.rickandmorty.ui.screens
+package ru.musindev.rickandmorty.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box

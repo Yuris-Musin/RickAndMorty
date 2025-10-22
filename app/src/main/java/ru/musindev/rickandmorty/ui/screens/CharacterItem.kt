@@ -51,8 +51,8 @@ fun CharacterItem(
                         .fillMaxWidth()
                         .alpha(0.8f),
                     contentScale = ContentScale.Crop,
-                    placeholder = painterResource(R.drawable.image),
-                    error = painterResource(R.drawable.image)
+                    placeholder = painterResource(R.drawable.img_plug),
+                    error = painterResource(R.drawable.img_plug)
                 )
                 StatusChip(
                     status = character.status,

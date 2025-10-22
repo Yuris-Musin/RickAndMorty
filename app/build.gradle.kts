@@ -47,6 +47,7 @@ dependencies {
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
     kapt(libs.room.compiler)
+    implementation(libs.room.paging)
 
     //Hilt
     implementation(libs.hilt.android)
@@ -70,6 +71,8 @@ dependencies {
 
     // Accompanist для Pull-to-Refresh
     implementation("com.google.accompanist:accompanist-swiperefresh:0.32.0")
+
+    implementation("androidx.paging:paging-runtime:3.2.1")
 
     implementation(libs.androidx.navigation)
 

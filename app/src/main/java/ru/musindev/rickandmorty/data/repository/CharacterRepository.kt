@@ -8,6 +8,7 @@ import ru.musindev.rickandmorty.data.mappers.toCharacterDetails
 import ru.musindev.rickandmorty.data.mappers.toEntity
 import ru.musindev.rickandmorty.data.models.CharacterResponse
 import ru.musindev.rickandmorty.domain.models.CharacterDetails
+import ru.musindev.rickandmorty.domain.models.CharacterFilters
 import ru.musindev.rickandmorty.utils.NetworkUtil
 import javax.inject.Inject
 
@@ -17,45 +18,66 @@ class CharacterRepository @Inject constructor(
     private val networkUtil: NetworkUtil
 ) {
 
-    suspend fun getCharacters(page: Int, forceRefresh: Boolean = false): CharacterResponse {
-        // NETWORK-FIRST стратегия: всегда пытаемся загрузить с сервера если есть интернет
+    suspend fun getCharacters(
+        page: Int,
+        forceRefresh: Boolean = false,
+        filters: CharacterFilters = CharacterFilters()
+    ): CharacterResponse {
+        // NETWORK-FIRST: всегда пытаемся загрузить с сервера если есть интернет
         if (networkUtil.isNetworkAvailable()) {
             return try {
-                Log.d("CharacterRepository", "Loading from network, page: $page")
-                val response = api.getCharacters(page)
+                Log.d("CharacterRepository", "Loading from network, page: $page, filters: $filters")
+                val response = api.getCharacters(
+                    page = page,
+                    status = filters.status,
+                    species = filters.species,
+                    type = filters.type,
+                    gender = filters.gender
+                )
 
-                // ИСПРАВЛЕНИЕ: Сохраняем ВСЕ страницы в кеш
-                if (forceRefresh && page == 1) {
-                    // При force refresh очищаем кеш только один раз
-                    characterDao.clearAllCharacters()
-                    Log.d("CharacterRepository", "Cache cleared for refresh")
+                // Сохраняем в кеш только если нет фильтров
+                if (!filters.isActive()) {
+                    if (forceRefresh && page == 1) {
+                        characterDao.clearAllCharacters()
+                        Log.d("CharacterRepository", "Cache cleared for refresh")
+                    }
+
+                    characterDao.insertCharacters(response.results.map { it.toEntity() })
+                    Log.d("CharacterRepository", "Saved ${response.results.size} characters from page $page to cache")
                 }
-
-                // Сохраняем каждую загруженную страницу
-                characterDao.insertCharacters(response.results.map { it.toEntity() })
-                Log.d("CharacterRepository", "Saved ${response.results.size} characters from page $page to cache")
 
                 response
             } catch (e: Exception) {
                 Log.e("CharacterRepository", "Network error, falling back to cache", e)
-                // При ошибке сети пробуем вернуть кеш
-                loadFromCache()
+                // При ошибке сети возвращаем кеш с фильтрами
+                loadFromCache(filters)
             }
         } else {
-            // Нет интернета - сразу возвращаем кеш
-            Log.d("CharacterRepository", "No internet, loading from cache")
-            return loadFromCache()
+            // Нет интернета - возвращаем кеш с фильтрами
+            Log.d("CharacterRepository", "No internet, loading from cache with filters")
+            return loadFromCache(filters)
         }
     }
 
-    private suspend fun loadFromCache(): CharacterResponse {
-        val cachedCharacters = characterDao.getAllCharacters()
-
-        if (cachedCharacters.isEmpty()) {
-            throw Exception("No internet connection and no cached data available")
+    private suspend fun loadFromCache(filters: CharacterFilters = CharacterFilters()): CharacterResponse {
+        val cachedCharacters = if (filters.isActive()) {
+            // Фильтрация через Room query
+            characterDao.getFilteredCharacters(
+                status = filters.status,
+                species = filters.species,
+                type = filters.type,
+                gender = filters.gender
+            )
+        } else {
+            // Все персонажи без фильтров
+            characterDao.getAllCharacters()
         }
 
-        Log.d("CharacterRepository", "Loaded ${cachedCharacters.size} characters from cache")
+        if (cachedCharacters.isEmpty()) {
+            throw Exception("No cached data available")
+        }
+
+        Log.d("CharacterRepository", "Loaded ${cachedCharacters.size} characters from cache (filters: ${filters.isActive()})")
         return CharacterResponse(
             info = ru.musindev.rickandmorty.data.models.PageInfo(
                 count = cachedCharacters.size,
@@ -68,24 +90,18 @@ class CharacterRepository @Inject constructor(
     }
 
     suspend fun getCharacterById(id: Int): CharacterDetails {
-        // NETWORK-FIRST: всегда пытаемся загрузить с сервера
         if (networkUtil.isNetworkAvailable()) {
             return try {
                 Log.d("CharacterRepository", "Loading character $id from network")
                 val details = api.getCharacterById(id)
-
-                // Сохраняем в кеш
                 characterDao.insertCharacter(details.toEntity())
                 Log.d("CharacterRepository", "Saved character $id to cache")
-
                 details
             } catch (e: Exception) {
                 Log.e("CharacterRepository", "Network error for character $id, falling back to cache", e)
-                // При ошибке пробуем взять из кеша
                 loadCharacterFromCache(id)
             }
         } else {
-            // Нет интернета - берём из кеша
             Log.d("CharacterRepository", "No internet, loading character $id from cache")
             return loadCharacterFromCache(id)
         }
@@ -93,7 +109,7 @@ class CharacterRepository @Inject constructor(
 
     private suspend fun loadCharacterFromCache(id: Int): CharacterDetails {
         val cachedCharacter = characterDao.getCharacterById(id)
-            ?: throw Exception("No internet connection and character not found in cache")
+            ?: throw Exception("Character not found in cache")
 
         return cachedCharacter.toCharacterDetails()
     }

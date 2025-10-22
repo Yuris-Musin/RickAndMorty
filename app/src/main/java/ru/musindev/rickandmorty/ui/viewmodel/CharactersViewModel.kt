@@ -25,6 +25,9 @@ class CharactersViewModel @Inject constructor(
     private val _isRefreshing = mutableStateOf(false)
     val isRefreshing = _isRefreshing
 
+    private val _error = mutableStateOf<String?>(null)
+    val error = _error
+
     private var currentPage = 1
     private var isLastPage = false
 
@@ -36,16 +39,20 @@ class CharactersViewModel @Inject constructor(
         if (_isLoading.value || _isRefreshing.value || isLastPage) return
 
         _isLoading.value = true
+        _error.value = null
+
         viewModelScope.launch {
             try {
-                val response = getCharactersUseCase(currentPage)
+                val response = getCharactersUseCase(currentPage, forceRefresh = false)
                 _characters.addAll(response.results)
                 currentPage++
+
                 if (response.info.next == null) {
                     isLastPage = true
                 }
             } catch (e: Exception) {
                 Log.e("CharactersViewModel", "Error loading characters", e)
+                _error.value = e.message ?: "Unknown error occurred"
             } finally {
                 _isLoading.value = false
             }
@@ -63,19 +70,24 @@ class CharactersViewModel @Inject constructor(
         if (_isRefreshing.value) return
 
         _isRefreshing.value = true
+        _error.value = null
+
         viewModelScope.launch {
             try {
                 currentPage = 1
                 isLastPage = false
                 _characters.clear()
-                val response = getCharactersUseCase(currentPage)
+
+                val response = getCharactersUseCase(currentPage, forceRefresh = true)
                 _characters.addAll(response.results)
                 currentPage++
+
                 if (response.info.next == null) {
                     isLastPage = true
                 }
             } catch (e: Exception) {
                 Log.e("CharactersViewModel", "Error refreshing characters", e)
+                _error.value = e.message ?: "Unknown error occurred"
             } finally {
                 _isRefreshing.value = false
             }
